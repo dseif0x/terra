@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -170,5 +171,37 @@ func TestCacheEviction(t *testing.T) {
 	}
 	if _, ok := up.cached("j"); !ok {
 		t.Error("newest entry missing")
+	}
+}
+
+func TestOgImage(t *testing.T) {
+	base, _ := url.Parse("https://example.org/a/")
+	cases := map[string]string{
+		`<meta property="og:image" content="https://cdn.example.org/x.jpg">`:         "https://cdn.example.org/x.jpg",
+		`<META content='/img/y.png' property='og:image' />`:                          "https://example.org/img/y.png",
+		`<meta name="twitter:image" content="http://example.org/z.jpg?a=1&amp;b=2">`: "https://example.org/z.jpg?a=1&b=2",
+		`<meta property="og:title" content="nope">`:                                  "",
+	}
+	for in, want := range cases {
+		if got := ogImage("<head>"+in+"</head>", base); got != want {
+			t.Errorf("%s: %q, want %q", in, got, want)
+		}
+	}
+}
+
+func TestNamesPlace(t *testing.T) {
+	if !namesPlace("Flowerpot Lodge, the only accommodation provider", "Flowerpot Bay Lodge") {
+		t.Error("lodge photo not matched")
+	}
+	if namesPlace("Ericodesma aerodana (54103) - moth", "Flowerpot Bay Lodge") {
+		t.Error("moth matched")
+	}
+}
+
+func TestPublicIP(t *testing.T) {
+	for ip, want := range map[string]bool{"1.1.1.1": true, "10.42.0.1": false, "127.0.0.1": false, "100.64.1.1": false, "169.254.1.1": false, "::1": false, "2a00:1450::1": true} {
+		if got := publicIP(net.ParseIP(ip)); got != want {
+			t.Errorf("%s: %v", ip, got)
+		}
 	}
 }

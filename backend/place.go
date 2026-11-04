@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"unicode"
 )
 
 // Place is what the details panel shows.
@@ -216,16 +217,32 @@ func (s *server) place(ctx context.Context, np *nominatimPlace) (*Place, error) 
 	if enTitle != "" {
 		wg.Go(func() { summary, _ = s.summary(ctx, enTitle) })
 	}
+	// Commons category: Wikidata's, else the one tagged in OSM
+	osmCommons := np.ExtraTags["wikimedia_commons"]
+	cat := ""
 	if wd != nil {
-		if cat := wd.str("P373"); cat != "" {
-			wg.Go(func() { catPics, _ = s.categoryPhotos(ctx, cat, 10) })
-		}
+		cat = wd.str("P373")
 	}
+	if c, ok := strings.CutPrefix(osmCommons, "Category:"); ok && cat == "" {
+		cat = c
+	}
+	if cat != "" {
+		wg.Go(func() { catPics, _ = s.categoryPhotos(ctx, cat, 10) })
+	}
+	var sitePic *Photo
+	if site := firstOf(np.ExtraTags, "website", "contact:website", "url"); site != "" {
+		wg.Go(func() { sitePic = s.previewImage(ctx, site, p.Name) })
+	}
+	// An area gets what was photographed around it. A point of interest
+	// only gets nearby photos that name it: around a remote lodge, the
+	// nearest Commons photo can be a moth specimen.
+	area := false
 	radius := 300
 	if p.BBox != nil {
 		// a radius that fits the place: a few km for a town, capped at 10 km
 		w := distanceKm(p.BBox[1], p.BBox[0], p.BBox[1], p.BBox[2])
 		radius = int(math.Min(10000, math.Max(300, w*1000/4)))
+		area = w >= 1
 	}
 	wg.Go(func() { nearby, _ = s.nearbyPhotos(ctx, p.Lat, p.Lon, radius, 12) })
 	var facts []Fact
@@ -236,8 +253,8 @@ func (s *server) place(ctx context.Context, np *nominatimPlace) (*Place, error) 
 	p.Facts = facts
 	p.Details = dropRepeats(p.Details, facts)
 
-	// Photos: the Wikidata image first, then its Commons category, then
-	// whatever was taken nearby.
+	// Photos: the Wikidata image, the one tagged in OSM, the website's
+	// preview image, the Commons category, then what was taken nearby.
 	seen := map[string]bool{}
 	add := func(ph Photo) {
 		if ph.Thumb != "" && !seen[ph.Page] && len(p.Photos) < 16 {
@@ -245,18 +262,31 @@ func (s *server) place(ctx context.Context, np *nominatimPlace) (*Place, error) 
 			p.Photos = append(p.Photos, ph)
 		}
 	}
+	var files []string
 	if wd != nil {
-		if img := wd.str("P18"); img != "" {
-			if ph, err := s.filePhoto(ctx, img); err == nil {
-				add(ph)
-			}
+		files = append(files, wd.str("P18"))
+	}
+	if f, ok := strings.CutPrefix(osmCommons, "File:"); ok {
+		files = append(files, f)
+	}
+	for _, f := range files {
+		if f == "" {
+			continue
 		}
+		if ph, err := s.filePhoto(ctx, f); err == nil {
+			add(ph)
+		}
+	}
+	if sitePic != nil {
+		add(*sitePic)
 	}
 	for _, ph := range catPics {
 		add(ph)
 	}
 	for _, ph := range nearby {
-		add(ph)
+		if area || namesPlace(ph.Title, p.Name) {
+			add(ph)
+		}
 	}
 
 	if summary != nil {
@@ -267,6 +297,20 @@ func (s *server) place(ctx context.Context, np *nominatimPlace) (*Place, error) 
 	}
 	p.Links = links(p, np, qid, enTitle)
 	return p, nil
+}
+
+// namesPlace reports whether a photo title shares a word of four or more
+// letters with the place's name.
+func namesPlace(title, name string) bool {
+	t := strings.ToLower(title)
+	for _, w := range strings.FieldsFunc(strings.ToLower(name), func(r rune) bool {
+		return !unicode.IsLetter(r) && !unicode.IsDigit(r)
+	}) {
+		if len([]rune(w)) >= 4 && strings.Contains(t, w) {
+			return true
+		}
+	}
+	return false
 }
 
 func inBBox(b []float64, lat, lon float64) bool {

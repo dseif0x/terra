@@ -84,7 +84,12 @@
         'bottom-right',
       );
       map.addControl(new maplibregl.ScaleControl({ unit: 'metric' }), 'bottom-left');
-      map.once('load', () => (ready = true));
+      map.once('load', () => {
+        ready = true;
+        // the compact attribution starts expanded and covers the map on phones
+        mapEl.querySelector('.maplibregl-ctrl-attrib')?.classList.remove('maplibregl-compact-show');
+        mapEl.querySelector('.maplibregl-ctrl-attrib')?.removeAttribute('open');
+      });
       map.on('style.load', styleLoaded);
       map.on('click', onClick);
       map.on('mousemove', (e) => {

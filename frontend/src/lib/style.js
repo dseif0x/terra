@@ -69,6 +69,11 @@ function english(field) {
   return JSON.stringify(field).includes('"name') ? NAME : field;
 }
 
+// Points of interest from lower zooms than Liberty's 15/16/17: rank is per
+// tile, so in a remote area the few POIs there are rank 1 and show early,
+// while dense cities still only show their top-ranked ones.
+const POI_MINZOOM = { poi_r1: 12, poi_r7: 14, poi_r20: 15 };
+
 function extras(style, onImagery) {
   style.sources.terrain = {
     type: 'raster-dem',
@@ -90,6 +95,7 @@ function extras(style, onImagery) {
   };
   for (const l of style.layers) {
     if (l.type === 'symbol' && l.layout?.['text-field']) l.layout['text-field'] = english(l.layout['text-field']);
+    if (POI_MINZOOM[l.id] !== undefined) l.minzoom = POI_MINZOOM[l.id];
   }
   style.layers.push(peakLayer(onImagery));
   return style;
