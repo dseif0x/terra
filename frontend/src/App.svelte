@@ -9,6 +9,7 @@
   import PlacePanel from './components/PlacePanel.svelte';
   import Lightbox from './components/Lightbox.svelte';
   import Icon from './components/Icon.svelte';
+  import Game from './game/Game.svelte';
   import { loadBase, satelliteStyle, mapStyle, overlayLayers, CLICKABLE } from './lib/style.js';
   import { place as fetchPlace } from './lib/api.js';
 
@@ -25,7 +26,7 @@
   const prefs = loadPrefs();
 
   let mapEl;
-  let map;
+  let map = $state.raw(null);
   let marker;
   let baseStyle;
   let clickable = [];
@@ -34,6 +35,11 @@
   let labels = $state(prefs.labels !== false);
   let relief = $state(false);
   let fatal = $state('');
+  // Explore (the map) or Game (find countries on a blank globe)
+  const query = new URLSearchParams(location.search);
+  const duelParam = query.get('duel');
+  let app = $state(query.has('game') || duelParam ? 'game' : 'explore');
+  let mapReady = $state(false);
 
   // the selected place: preview (known at once), then the details
   let sel = $state(null);
@@ -74,6 +80,7 @@
         attributionControl: { compact: true },
       });
       window.terraMap = map; // for debugging from the console
+      mapReady = true;
       map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'bottom-right');
       map.addControl(
         new maplibregl.GeolocateControl({
@@ -93,17 +100,30 @@
       map.on('style.load', styleLoaded);
       map.on('click', onClick);
       map.on('mousemove', (e) => {
+        if (app === 'game') return;
         const hit = clickable.length && map.queryRenderedFeatures(box(e.point, 4), { layers: clickable }).length;
         map.getCanvas().style.cursor = hit ? 'pointer' : '';
       });
       const p = new URLSearchParams(location.search).get('p');
-      if (p) open({}, { osm: p }, !hadView);
+      if (p && app === 'explore') open({}, { osm: p }, !hadView);
     })();
     return () => {
       alive = false;
       map?.remove();
     };
   });
+
+  function enterGame() {
+    close();
+    app = 'game';
+    history.replaceState(null, '', '?game' + location.hash);
+  }
+
+  function exitGame() {
+    app = 'explore';
+    map.setStyle(buildStyle(), { diff: false });
+    history.replaceState(null, '', location.pathname + location.hash);
+  }
 
   function buildStyle() {
     return mode === 'map' ? mapStyle(baseStyle) : satelliteStyle(baseStyle);
@@ -144,6 +164,7 @@
   const pretty = (s) => (s ? (s[0].toUpperCase() + s.slice(1)).replaceAll('_', ' ') : '');
 
   function onClick(e) {
+    if (app === 'game') return;
     const hits = clickable.length
       ? map.queryRenderedFeatures(box(e.point, 8), { layers: clickable }).filter((f) => f.properties.name)
       : [];
@@ -220,12 +241,15 @@
   const bias = () => (map ? { center: map.getCenter(), zoom: map.getZoom() } : {});
 </script>
 
-<div class="map" bind:this={mapEl}></div>
+<div class="map" class:game={app === 'game'} bind:this={mapEl}></div>
 
 {#if fatal}
   <div class="fatal glass">{fatal}</div>
 {/if}
 
+{#if app === 'game'}
+  {#if mapReady}<Game {map} {duelParam} onexit={exitGame} />{/if}
+{:else}
 <div class="top">
   <SearchBar {onpick} {bias} />
 </div>
@@ -267,6 +291,9 @@
       aria-pressed={relief}><Icon name="mountain" /></button
     >
   </div>
+  <div class="group glass">
+    <button onclick={enterGame} title="Game: find the countries" aria-label="Game"><Icon name="gamepad" /></button>
+  </div>
 </div>
 
 {#if sel}
@@ -284,11 +311,15 @@
 {#if photo !== null && sel?.place?.photos?.length}
   <Lightbox photos={sel.place.photos} bind:index={photo} onclose={() => (photo = null)} />
 {/if}
+{/if}
 
 <style>
   .map {
     position: absolute;
     inset: 0;
+  }
+  .map.game :global(.maplibregl-ctrl-geolocate) {
+    display: none;
   }
   .top {
     position: absolute;

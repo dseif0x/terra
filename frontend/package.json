@@ -4,17 +4,23 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "dev": "node scripts/game-data.mjs && vite",
+    "build": "node scripts/game-data.mjs && vite build",
+    "preview": "vite preview",
+    "game-data": "node scripts/game-data.mjs"
   },
   "dependencies": {
     "@lucide/svelte": "^1.68.0",
+    "d3-geo": "^3.1.2",
     "maplibre-gl": "^6.16.0",
     "svelte": "^5.57.3"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^5.1.1",
-    "vite": "^6.3.5"
+    "flag-icons": "^7.6.0",
+    "topojson-client": "^3.1.0",
+    "vite": "^6.3.5",
+    "world-atlas": "^2.0.2",
+    "world-countries": "^5.1.0"
   }
 }

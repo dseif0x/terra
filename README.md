@@ -12,6 +12,21 @@ A map of the world on satellite imagery, in the browser (installable as a PWA).
   capital, languages, time zone, … from Wikidata), the English Wikipedia
   summary, OSM details (opening hours, phone, website, cuisine) and links to
   Google Maps, Apple Maps, OpenStreetMap, Wikipedia and Wikidata.
+- **Game** mode (the controller button, or `/?game`): find countries on a
+  blank globe. Three tries per country (1,000 / 650 / 350 points, then up to
+  150 for the closest miss), with the distance and direction after a wrong tap.
+  - **Daily**: five countries a day from easy to hard, the same for everyone,
+    with a streak, share text and past days to play.
+  - **Blitz**: after the daily, five more with one tap and 20 seconds each.
+  - **Duels**: a challenge link to your daily (`/?duel=…`); a friend plays the
+    same five and sees who won.
+  - **Learn**: spaced repetition by region (or the countries independent since
+    1990), with a progress map.
+  - **Practice**: unlimited, by name and flag, flag only or shape, by region
+    and difficulty.
+
+  Progress is kept in the browser (localStorage). The 197 countries are the UN
+  members plus the Vatican, Palestine, Kosovo and Taiwan.
 
 The frontend (Svelte 5 + MapLibre GL) loads tiles straight from the tile
 servers. The Go backend does the lookups (Photon, Nominatim, Wikidata,
@@ -55,4 +70,8 @@ Imagery © Esri, Maxar, Earthstar Geographics and the GIS User Community.
 Map data © OpenStreetMap contributors, tiles by OpenFreeMap / OpenMapTiles.
 Terrain: Mapzen terrain tiles on AWS. Facts from Wikidata (CC0), summaries
 from Wikipedia (CC BY-SA), photos from Wikimedia Commons (each under its own
-license, credited in the viewer).
+license, credited in the viewer). Game: outlines from Natural Earth (public
+domain, via world-atlas), country facts from
+[mledoze/countries](https://github.com/mledoze/countries) (ODbL), flags from
+[flag-icons](https://github.com/lipis/flag-icons) (MIT); built into
+`frontend/public/game/` by `npm run game-data` (part of `npm run build`).
