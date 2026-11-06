@@ -679,6 +679,7 @@
           {#if learnSum}<span class="small muted">{learnSum.due} due</span>{/if}
         {:else}
           <span class="small">Found <b>{s.found}</b> / {s.rounds.length}</span>
+          <span class="small muted" title="Found on the first try in a row">Streak {s.streak} · best {store.practice.best || 0}</span>
         {/if}
       </div>
       {#if s.kind === 'blitz'}
@@ -754,7 +755,7 @@
       {/if}
       <p class="small">
         Blitz: {bl.length} played{bl.length ? `, best ${fmt(Math.max(...bl.map((b) => b.score)))}` : ''}<br />
-        Practice: {fmt(store.practice.found)} found in {fmt(store.practice.rounds)} rounds<br />
+        Practice: {fmt(store.practice.found)} found in {fmt(store.practice.rounds)} rounds · best first-try streak {store.practice.best || 0}<br />
         Learn: {ws.pct}% of the world · {ws.mastered} mastered, {ws.known} known, {ws.learning} learning
       </p>
       <p class="muted small">Kept in this browser only.</p>
@@ -779,6 +780,11 @@
         <li><b>Learn</b>: spaced repetition. Countries you miss come back within minutes, the ones you know after days.</li>
         <li><b>Practice</b>: endless rounds by name, flag or shape, by region and difficulty.</li>
       </ul>
+      <p class="muted small credits">
+        Outlines: <a href="https://www.naturalearthdata.com/" target="_blank" rel="noopener">Natural Earth</a> · country data:
+        <a href="https://github.com/mledoze/countries" target="_blank" rel="noopener">mledoze/countries</a> (ODbL) · flags:
+        <a href="https://github.com/lipis/flag-icons" target="_blank" rel="noopener">flag-icons</a>
+      </p>
       <div class="row"><button class="btn" onclick={() => (modal = null)}>Got it</button></div>
     </div>
   </div>
@@ -1392,6 +1398,9 @@
   }
   .help li {
     margin: 5px 0;
+  }
+  .credits a {
+    color: var(--muted);
   }
 
   .confetti {

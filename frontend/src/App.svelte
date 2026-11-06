@@ -318,7 +318,10 @@
     position: absolute;
     inset: 0;
   }
-  .map.game :global(.maplibregl-ctrl-geolocate) {
+  /* Game mode keeps the globe bare; the data credits are in its help */
+  .map.game :global(.maplibregl-ctrl-geolocate),
+  .map.game :global(.maplibregl-ctrl-scale),
+  .map.game :global(.maplibregl-ctrl-attrib) {
     display: none;
   }
   .top {
