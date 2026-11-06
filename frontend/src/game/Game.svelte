@@ -780,6 +780,11 @@
         <li><b>Learn</b>: spaced repetition. Countries you miss come back within minutes, the ones you know after days.</li>
         <li><b>Practice</b>: endless rounds by name, flag or shape, by region and difficulty.</li>
       </ul>
+      <p class="muted small credits">
+        Outlines: <a href="https://www.naturalearthdata.com/" target="_blank" rel="noopener">Natural Earth</a> · country data:
+        <a href="https://github.com/mledoze/countries" target="_blank" rel="noopener">mledoze/countries</a> (ODbL) · flags:
+        <a href="https://github.com/lipis/flag-icons" target="_blank" rel="noopener">flag-icons</a>
+      </p>
       <div class="row"><button class="btn" onclick={() => (modal = null)}>Got it</button></div>
     </div>
   </div>
@@ -1393,6 +1398,9 @@
   }
   .help li {
     margin: 5px 0;
+  }
+  .credits a {
+    color: var(--muted);
   }
 
   .confetti {
