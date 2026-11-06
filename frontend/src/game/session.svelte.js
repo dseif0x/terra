@@ -18,6 +18,7 @@ const CLOSE_KM = 80;
 export const BLITZ_MS = 20000;
 const BLITZ_FLOOR = 200;
 const GRACE_MS = 350; // taps right after a round opens are ignored
+const ECHO_MS = 300; // the second tap of a double tap is not a guess
 
 // points for a country not found in three tries, by the closest tap
 const consolation = (km) => Math.round(Math.max(0, 150 * (1 - km / 3000)));
@@ -34,6 +35,7 @@ export class Session {
   rounds = $state([]);
   score = $state(0);
   found = $state(0);
+  streak = $state(0); // practice: countries found on the first try in a row
   toast = $state(null); // { title, text }
   timeLeft = $state(0);
   learnNote = $state(null);
@@ -143,7 +145,11 @@ export class Session {
   // a tap on the globe: the area tapped (or null for the sea) and where
   tap(idx, lngLat) {
     if (this.phase !== 'playing') return;
-    if (performance.now() - this.opened < GRACE_MS) return;
+    const now = performance.now();
+    if (now - this.opened < GRACE_MS) return;
+    const gap = now - (this.lastTap ?? -Infinity);
+    this.lastTap = now;
+    if (gap < ECHO_MS) return;
     const r = this.current;
     const target = r.c;
     const tapped = this.data.areaAt(idx);
@@ -253,6 +259,8 @@ export class Session {
     if (this.kind === 'practice') {
       state.practice.rounds++;
       if (r.solved) state.practice.found++;
+      this.streak = r.solved && r.attempts === 1 ? this.streak + 1 : 0;
+      state.practice.best = Math.max(state.practice.best || 0, this.streak);
     }
     if (this.kind === 'daily') {
       state.daily[this.day] = { done: false, rounds: this.rounds, archive: this.archive };
