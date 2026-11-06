@@ -255,6 +255,11 @@
     heat(progressRegion);
     view(progressRegion);
   }
+  // the zoom buttons only get in the way of the menu
+  $effect(() => {
+    map.getContainer().classList.toggle('game-menu', screen === 'menu');
+    return () => map.getContainer().classList.remove('game-menu');
+  });
   $effect(() => {
     if (screen !== 'progress' && screen !== 'play' && data) {
       // leaving the progress map

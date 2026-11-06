@@ -324,6 +324,9 @@
   .map.game :global(.maplibregl-ctrl-attrib) {
     display: none;
   }
+  .map.game:global(.game-menu) :global(.maplibregl-ctrl-group) {
+    display: none;
+  }
   .top {
     position: absolute;
     z-index: 10;
